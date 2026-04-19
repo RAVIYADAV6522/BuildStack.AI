@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuildStack.AI — Build Smarter. Deploy Faster.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#07070d;--paper:#f5f2eb;--acid:#c8ff00;--electric:#00f5ff;--ember:#ff4500;
+  --sans:'Syne',sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'DM Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--paper);font-family:var(--sans);overflow-x:hidden;cursor:none}
+
+#cursor{position:fixed;top:0;left:0;width:10px;height:10px;background:var(--acid);border-radius:50%;pointer-events:none;z-index:9999;mix-blend-mode:difference;transform:translate(-50%,-50%);transition:width .2s,height .2s}
+#cursor-ring{position:fixed;top:0;left:0;width:38px;height:38px;border:1px solid rgba(200,255,0,.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%)}
+body:has(a:hover) #cursor,body:has(button:hover) #cursor,body:has(input:hover) #cursor,body:has(textarea:hover) #cursor,body:has(select:hover) #cursor{width:22px;height:22px}
+
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:.3}
+
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+nav{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:22px 48px;z-index:100;border-bottom:1px solid rgba(245,242,235,.06);backdrop-filter:blur(24px);background:rgba(7,7,13,.65)}
+.logo{font-family:var(--sans);font-weight:800;font-size:1.1rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;background:var(--acid);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.65)}}
+.nav-links{display:flex;gap:38px;list-style:none}
+.nav-links a{font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,242,235,.45);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--paper)}
+.nav-cta{font-family:var(--mono);font-size:.76rem;background:var(--acid);color:var(--ink);border:none;padding:10px 24px;cursor:none;letter-spacing:.06em;transition:background .2s,transform .15s;font-weight:500}
+.nav-cta:hover{background:#d4ff1a;transform:translateY(-1px)}
+
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:140px 48px 80px;position:relative;z-index:1}
+.hero-left{position:relative;z-index:2}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.7rem;color:var(--acid);letter-spacing:.15em;text-transform:uppercase;border:1px solid rgba(200,255,0,.2);padding:6px 14px;margin-bottom:32px;animation:fadeUp .8s ease both}
+.hero-tag::before{content:'//';opacity:.45}
+.hero-h1{font-family:var(--serif);font-size:clamp(3.4rem,5.8vw,6.5rem);line-height:1.0;letter-spacing:-.02em;font-weight:400;animation:fadeUp .8s .12s ease both}
+.hero-h1 em{color:var(--acid);font-style:italic}
+.hero-h1 .stroke{-webkit-text-stroke:1px var(--paper);color:transparent}
+.hero-sub{margin-top:26px;max-width:400px;font-size:.9rem;line-height:1.7;color:rgba(245,242,235,.5);font-family:var(--mono);font-weight:300;animation:fadeUp .8s .25s ease both}
+.hero-actions{display:flex;gap:14px;margin-top:40px;align-items:center;animation:fadeUp .8s .38s ease both;flex-wrap:wrap}
+.btn-primary{background:var(--acid);color:var(--ink);border:none;padding:15px 34px;font-family:var(--sans);font-weight:700;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;cursor:none;transition:transform .15s,box-shadow .2s;position:relative;overflow:hidden}
+.btn-primary::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.2);transform:translateX(-100%) skewX(-15deg);transition:transform .4s}
+.btn-primary:hover::after{transform:translateX(110%) skewX(-15deg)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(200,255,0,.28)}
+.btn-ghost{background:transparent;color:var(--paper);border:1px solid rgba(245,242,235,.18);padding:15px 34px;font-family:var(--sans);font-weight:600;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;cursor:none;transition:border-color .2s,color .2s;display:flex;align-items:center;gap:10px}
+.btn-ghost:hover{border-color:var(--paper);color:var(--acid)}
+.hero-stats{display:flex;gap:36px;margin-top:56px;padding-top:36px;border-top:1px solid rgba(245,242,235,.07);animation:fadeUp .8s .5s ease both;flex-wrap:wrap}
+.stat-num{font-family:var(--serif);font-size:2.3rem;color:var(--paper);line-height:1}
+.stat-num span{color:var(--acid)}
+.stat-label{font-family:var(--mono);font-size:.68rem;color:rgba(245,242,235,.38);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+.hero-right{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;height:580px}
+.terminal{width:460px;background:rgba(7,7,13,.92);border:1px solid rgba(200,255,0,.18);box-shadow:0 0 80px rgba(200,255,0,.07),inset 0 0 40px rgba(200,255,0,.02);animation:fadeUp .8s .18s ease both;position:relative}
+.terminal-bar{background:rgba(200,255,0,.06);padding:11px 14px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(200,255,0,.08)}
+.t-dot{width:10px;height:10px;border-radius:50%}
+.t-dot:nth-child(1){background:#ff5f56}.t-dot:nth-child(2){background:#ffbd2e}.t-dot:nth-child(3){background:#27c93f}
+.terminal-title{font-family:var(--mono);font-size:.7rem;color:rgba(200,255,0,.45);margin-left:8px}
+.terminal-body{padding:22px;font-family:var(--mono);font-size:.78rem;line-height:2}
+.t-line{display:flex;gap:10px}
+.t-prompt{color:var(--acid)}.t-cmd{color:var(--paper)}
+.t-out{color:rgba(245,242,235,.38);padding-left:22px}
+.t-success{color:#27c93f;padding-left:22px}
+.t-cursor{display:inline-block;width:7px;height:13px;background:var(--acid);vertical-align:middle;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.badge{position:absolute;background:rgba(7,7,13,.95);border:1px solid rgba(245,242,235,.09);padding:13px 17px;backdrop-filter:blur(10px);animation:float 4s ease-in-out infinite}
+.badge-label{font-family:var(--mono);font-size:.63rem;color:rgba(245,242,235,.38);text-transform:uppercase;letter-spacing:.1em}
+.badge-value{font-family:var(--serif);font-size:1.15rem;margin-top:2px}
+.badge-1{top:32px;right:-28px;animation-delay:0s}.badge-2{bottom:70px;left:-38px;animation-delay:1.4s}.badge-2 .badge-value{color:var(--electric)}.badge-3{top:50%;right:-44px;animation-delay:.7s}.badge-3 .badge-value{color:var(--acid);font-size:.95rem;font-family:var(--mono)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+.marquee-wrap{border-top:1px solid rgba(245,242,235,.07);border-bottom:1px solid rgba(245,242,235,.07);overflow:hidden;padding:17px 0;background:rgba(200,255,0,.02);position:relative;z-index:1}
+.marquee{display:flex;gap:70px;white-space:nowrap;animation:marquee 22s linear infinite}
+.marquee-item{font-family:var(--mono);font-size:.73rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,242,235,.32);display:flex;align-items:center;gap:22px;flex-shrink:0}
+.marquee-item::after{content:'✦';color:var(--acid);font-size:.55rem}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.section{padding:110px 48px;position:relative;z-index:1}
+.section-label{font-family:var(--mono);font-size:.68rem;color:var(--acid);letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px}
+.section-title{font-family:var(--serif);font-size:clamp(2.4rem,3.8vw,4rem);font-weight:400;line-height:1.1;letter-spacing:-.02em}
+.section-title em{color:var(--acid);font-style:italic}
+
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:60px;border:1px solid rgba(245,242,235,.06)}
+.service-card{padding:46px 38px;border-right:1px solid rgba(245,242,235,.06);position:relative;overflow:hidden;transition:background .3s;cursor:none}
+.service-card:last-child{border-right:none}
+.service-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(200,255,0,.04),transparent);opacity:0;transition:opacity .3s}
+.service-card:hover::before{opacity:1}.service-card:hover{background:rgba(200,255,0,.02)}
+.service-num{font-family:var(--mono);font-size:.68rem;color:rgba(245,242,235,.18);letter-spacing:.1em;margin-bottom:36px}
+.service-icon{width:46px;height:46px;margin-bottom:22px}
+.service-icon-inner{width:100%;height:100%;border:1px solid rgba(200,255,0,.28);display:flex;align-items:center;justify-content:center;font-size:1.3rem;transition:border-color .3s,background .3s}
+.service-card:hover .service-icon-inner{border-color:var(--acid);background:rgba(200,255,0,.07)}
+.service-name{font-family:var(--sans);font-weight:700;font-size:1.1rem;margin-bottom:12px;letter-spacing:-.01em}
+.service-desc{font-family:var(--mono);font-size:.76rem;line-height:1.8;color:rgba(245,242,235,.42);font-weight:300}
+.service-arrow{position:absolute;bottom:38px;right:38px;font-size:1.1rem;color:var(--acid);opacity:0;transition:opacity .3s,transform .3s;transform:translate(-4px,4px)}
+.service-card:hover .service-arrow{opacity:1;transform:translate(0,0)}
+
+.process{padding:110px 48px;background:rgba(200,255,0,.015);border-top:1px solid rgba(245,242,235,.06);position:relative;z-index:1}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);margin-top:60px;position:relative}
+.process-steps::before{content:'';position:absolute;top:27px;left:56px;right:56px;height:1px;background:linear-gradient(90deg,var(--acid),rgba(200,255,0,.06));z-index:0}
+.step{padding:0 28px;position:relative;z-index:1}
+.step-circle{width:54px;height:54px;border:1px solid rgba(200,255,0,.35);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.78rem;color:var(--acid);background:var(--ink);margin-bottom:26px}
+.step-name{font-family:var(--sans);font-weight:700;font-size:.95rem;margin-bottom:10px}
+.step-desc{font-family:var(--mono);font-size:.73rem;color:rgba(245,242,235,.38);line-height:1.8;font-weight:300}
+
+.bento{padding:110px 48px;position:relative;z-index:1}
+.bento-grid{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(2,270px);gap:14px;margin-top:60px}
+.bento-cell{background:rgba(245,242,235,.025);border:1px solid rgba(245,242,235,.065);padding:34px;position:relative;overflow:hidden;transition:border-color .3s;cursor:none}
+.bento-cell:hover{border-color:rgba(200,255,0,.22)}
+.bento-cell-1{grid-column:1/6;grid-row:1;background:linear-gradient(135deg,rgba(200,255,0,.05) 0%,rgba(7,7,13,0) 60%)}
+.bento-cell-2{grid-column:6/9;grid-row:1}
+.bento-cell-3{grid-column:9/13;grid-row:1/3;background:linear-gradient(180deg,rgba(0,245,255,.055) 0%,rgba(7,7,13,0) 80%);display:flex;flex-direction:column;justify-content:flex-end}
+.bento-cell-4{grid-column:1/4;grid-row:2}
+.bento-cell-5{grid-column:4/6;grid-row:2}
+.bento-cell-6{grid-column:6/9;grid-row:2}
+.bento-tag{font-family:var(--mono);font-size:.63rem;color:var(--acid);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px}
+.bento-h{font-family:var(--serif);font-size:1.7rem;line-height:1.15;font-weight:400}
+.bento-h em{color:var(--acid);font-style:italic}
+.bento-p{font-family:var(--mono);font-size:.73rem;color:rgba(245,242,235,.38);line-height:1.8;margin-top:10px;font-weight:300}
+.bento-metric{font-family:var(--serif);font-size:3.4rem;line-height:1}
+.bento-metric span{color:var(--acid)}
+.bento-sub{font-family:var(--mono);font-size:.68rem;color:rgba(245,242,235,.38);margin-top:6px;text-transform:uppercase;letter-spacing:.1em}
+.bento-orb{position:absolute;top:-28px;right:-28px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(200,255,0,.14),transparent 70%)}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:75px;margin-top:20px}
+.bar{flex:1;background:rgba(200,255,0,.18)}
+.bar.hi{background:var(--acid)}
+
+/* ── ENQUIRY SECTION ── */
+.enquiry-section{padding:110px 48px;background:rgba(200,255,0,.012);border-top:1px solid rgba(245,242,235,.06);position:relative;z-index:1}
+.enquiry-inner{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start}
+.enquiry-desc{font-family:var(--mono);font-size:.82rem;color:rgba(245,242,235,.45);line-height:1.85;font-weight:300;margin-top:18px;max-width:380px}
+.enquiry-perks{margin-top:40px;display:flex;flex-direction:column;gap:16px}
+.perk{display:flex;align-items:center;gap:14px}
+.perk-dot{width:6px;height:6px;background:var(--acid);border-radius:50%;flex-shrink:0}
+.perk-text{font-family:var(--mono);font-size:.76rem;color:rgba(245,242,235,.5);letter-spacing:.04em}
+.enquiry-form-wrap{background:rgba(245,242,235,.025);border:1px solid rgba(245,242,235,.07);padding:40px}
+
+/* ── FORM ELEMENTS ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0}
+.form-group{margin-bottom:16px}
+.form-label{font-family:var(--mono);font-size:.68rem;color:rgba(245,242,235,.5);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:8px}
+.form-input,.form-textarea,.form-select{width:100%;background:rgba(245,242,235,.04);border:1px solid rgba(245,242,235,.1);color:var(--paper);font-family:var(--mono);font-size:.82rem;padding:13px 16px;transition:border-color .2s,background .2s;outline:none;cursor:none;appearance:none;-webkit-appearance:none}
+.form-input::placeholder,.form-textarea::placeholder{color:rgba(245,242,235,.22)}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:rgba(200,255,0,.5);background:rgba(200,255,0,.03)}
+.form-textarea{resize:vertical;min-height:110px;line-height:1.7}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8ff00' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
+.form-select option{background:#0c0c14;color:var(--paper)}
+.budget-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.budget-option{border:1px solid rgba(245,242,235,.1);padding:10px 8px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;user-select:none}
+.budget-option input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.budget-label{font-family:var(--mono);font-size:.72rem;color:rgba(245,242,235,.45);cursor:pointer;display:block;letter-spacing:.06em;pointer-events:none}
+.budget-option.selected{border-color:var(--acid);background:rgba(200,255,0,.06)}
+.budget-option.selected .budget-label{color:var(--acid)}
+.form-submit{width:100%;background:var(--acid);color:var(--ink);border:none;padding:16px;font-family:var(--sans);font-weight:800;font-size:.88rem;letter-spacing:.06em;text-transform:uppercase;cursor:none;margin-top:6px;transition:background .2s,transform .15s,box-shadow .2s;position:relative;overflow:hidden}
+.form-submit::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,.2);transform:translateX(-100%) skewX(-15deg);transition:transform .4s}
+.form-submit:hover::after{transform:translateX(110%) skewX(-15deg)}
+.form-submit:hover{background:#d4ff1a;transform:translateY(-1px);box-shadow:0 10px 34px rgba(200,255,0,.28)}
+.form-footer-note{font-family:var(--mono);font-size:.65rem;color:rgba(245,242,235,.25);text-align:center;margin-top:14px;letter-spacing:.05em}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(7,7,13,.88);backdrop-filter:blur(18px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;padding:20px}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{width:100%;max-width:640px;background:rgba(12,12,20,.97);border:1px solid rgba(200,255,0,.2);position:relative;transform:translateY(30px) scale(.97);transition:transform .45s cubic-bezier(.16,1,.3,1);max-height:92vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0) scale(1)}
+.modal-header{padding:36px 40px 28px;border-bottom:1px solid rgba(245,242,235,.07);display:flex;justify-content:space-between;align-items:flex-start}
+.modal-title-label{font-family:var(--mono);font-size:.68rem;color:var(--acid);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px}
+.modal-title{font-family:var(--serif);font-size:2rem;font-weight:400;line-height:1.1}
+.modal-title em{color:var(--acid);font-style:italic}
+.modal-close{background:none;border:1px solid rgba(245,242,235,.12);color:rgba(245,242,235,.5);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:none;font-size:1.1rem;transition:border-color .2s,color .2s;flex-shrink:0;margin-left:16px;margin-top:4px}
+.modal-close:hover{border-color:var(--acid);color:var(--acid)}
+.modal-body{padding:32px 40px 40px}
+
+/* ── SUCCESS ── */
+.form-success{text-align:center;padding:20px 0;display:none}
+.form-success.show{display:block}
+.form-success-icon{font-size:3rem;margin-bottom:18px}
+.form-success-title{font-family:var(--serif);font-size:1.8rem;font-weight:400}
+.form-success-title em{color:var(--acid);font-style:italic}
+.form-success-msg{font-family:var(--mono);font-size:.78rem;color:rgba(245,242,235,.45);margin-top:12px;line-height:1.8;font-weight:300}
+
+/* ── CTA ── */
+.cta-section{padding:110px 48px;text-align:center;position:relative;overflow:hidden;border-top:1px solid rgba(245,242,235,.06);z-index:1}
+.cta-section::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(200,255,0,.055) 0%,transparent 65%);pointer-events:none}
+.cta-label{font-family:var(--mono);font-size:.68rem;color:var(--acid);letter-spacing:.2em;text-transform:uppercase;margin-bottom:18px}
+.cta-title{font-family:var(--serif);font-size:clamp(2.8rem,5vw,5.8rem);font-weight:400;line-height:1.05;letter-spacing:-.02em;max-width:780px;margin:0 auto 14px}
+.cta-title em{color:var(--acid);font-style:italic}.cta-title .stroke{-webkit-text-stroke:1px rgba(245,242,235,.4);color:transparent}
+.cta-sub{font-family:var(--mono);font-size:.82rem;color:rgba(245,242,235,.42);max-width:460px;margin:20px auto 44px;line-height:1.85;font-weight:300}
+.cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+footer{border-top:1px solid rgba(245,242,235,.07);padding:44px 48px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:22px;position:relative;z-index:1}
+.footer-logo{font-family:var(--sans);font-weight:800;font-size:.9rem}
+.footer-links{display:flex;gap:28px;list-style:none}
+.footer-links a{font-family:var(--mono);font-size:.7rem;color:rgba(245,242,235,.3);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s}
+.footer-links a:hover{color:var(--acid)}
+.footer-copy{font-family:var(--mono);font-size:.66rem;color:rgba(245,242,235,.18);letter-spacing:.05em}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}.reveal-delay-2{transition-delay:.2s}.reveal-delay-3{transition-delay:.3s}.reveal-delay-4{transition-delay:.4s}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:rgba(200,255,0,.35)}
+
+/* ── SENDING STATE ── */
+.form-submit.sending{background:#9fcc00;pointer-events:none;display:flex;align-items:center;justify-content:center;gap:10px}
+.form-submit.sending::after{display:none}
+.spinner{width:16px;height:16px;border:2px solid rgba(7,7,13,.3);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.form-error-msg{font-family:var(--mono);font-size:.72rem;color:#ff6b4a;margin-top:12px;text-align:center;padding:10px 14px;border:1px solid rgba(255,107,74,.25);background:rgba(255,107,74,.06);display:none}
+.form-error-msg.show{display:block}
+/* ── TOAST NOTIFICATION ── */
+#toast{position:fixed;bottom:32px;right:32px;background:rgba(12,12,20,.97);border:1px solid rgba(200,255,0,.3);padding:16px 22px;font-family:var(--mono);font-size:.78rem;color:var(--paper);z-index:9000;transform:translateY(80px);opacity:0;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s;max-width:320px;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast .toast-icon{color:var(--acid);margin-right:8px}
+#toast.error-toast{border-color:rgba(255,107,74,.4)}
+#toast.error-toast .toast-icon{color:#ff6b4a}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding:120px 24px 60px}
+  .hero-right{display:none}
+  .services-grid{grid-template-columns:1fr}
+  .process-steps{grid-template-columns:1fr 1fr;gap:36px}
+  .bento-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto}
+  .bento-cell-1,.bento-cell-2,.bento-cell-3,.bento-cell-4,.bento-cell-5,.bento-cell-6{grid-column:auto;grid-row:auto}
+  .enquiry-inner{grid-template-columns:1fr;gap:40px}
+  nav{padding:18px 22px}.nav-links{display:none}
+  .section,.process,.bento,.cta-section,.enquiry-section{padding:80px 22px}
+  footer{padding:30px 22px}
+  .modal-header,.modal-body{padding-left:22px;padding-right:22px}
+  .form-row{grid-template-columns:1fr}
+  .budget-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<div id="toast"><span class="toast-icon">✦</span><span id="toast-msg"></span></div>
+
+<!-- ═══ MODAL ENQUIRY ════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="enquiryModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title-label">New Project Enquiry</div>
+        <h2 class="modal-title">Let's <em>Build</em> Together</h2>
+      </div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalFormWrap">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name *</label><input type="text" class="form-input" id="mf-fname" placeholder="Alex"></div>
+          <div class="form-group"><label class="form-label">Last Name *</label><input type="text" class="form-input" id="mf-lname" placeholder="Johnson"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-input" id="mf-email" placeholder="alex@company.com"></div>
+          <div class="form-group"><label class="form-label">Phone / WhatsApp</label><input type="tel" class="form-input" id="mf-phone" placeholder="+1 555 000 0000"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Company / Startup</label><input type="text" class="form-input" id="mf-company" placeholder="Acme Corp."></div>
+        <div class="form-group"><label class="form-label">Service Required *</label>
+          <select class="form-select form-input" id="mf-service">
+            <option value="" disabled selected>Select a service...</option>
+            <option>Custom Software Development</option>
+            <option>AI &amp; Automation</option>
+            <option>Cloud Architecture &amp; DevOps</option>
+            <option>API Integration</option>
+            <option>Web / Mobile Application</option>
+            <option>Full-Stack Product Build</option>
+            <option>Not sure — let's discuss</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated Budget</label>
+          <div class="budget-grid">
+            <div class="budget-option"><input type="radio" name="mbudget" value="lt5k"><label class="budget-label">&lt; $5K</label></div>
+            <div class="budget-option"><input type="radio" name="mbudget" value="5-20k"><label class="budget-label">$5K–$20K</label></div>
+            <div class="budget-option"><input type="radio" name="mbudget" value="20-50k"><label class="budget-label">$20K–$50K</label></div>
+            <div class="budget-option"><input type="radio" name="mbudget" value="50-100k"><label class="budget-label">$50K–$100K</label></div>
+            <div class="budget-option"><input type="radio" name="mbudget" value="gt100k"><label class="budget-label">$100K+</label></div>
+            <div class="budget-option"><input type="radio" name="mbudget" value="flex"><label class="budget-label">Flexible</label></div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Project Details *</label><textarea class="form-textarea" id="mf-msg" placeholder="Describe what you're building, the problem you're solving, and any tech requirements or deadlines..."></textarea></div>
+        <div class="form-group"><label class="form-label">How did you hear about us?</label>
+          <select class="form-select form-input" id="mf-source">
+            <option value="" disabled selected>Select...</option>
+            <option>Google Search</option><option>LinkedIn</option><option>Twitter / X</option>
+            <option>Referral from a friend</option><option>Portfolio / Direct</option><option>Other</option>
+          </select>
+        </div>
+        <button class="form-submit" onclick="submitModal()">Send Enquiry →</button>
+        <p class="form-error-msg" id="modalErrMsg"></p>
+        <p class="form-footer-note">We respond within 4 hours · Your data is never shared or sold.</p>
+      </div>
+      <div class="form-success" id="modalSuccess">
+        <div class="form-success-icon">✦</div>
+        <div class="form-success-title">Enquiry <em>Received!</em></div>
+        <p class="form-success-msg">Thank you — we've got your details and will reach out within 4 hours.<br>Expect a response at the email you provided.</p>
+        <button class="btn-primary" style="margin-top:28px" onclick="closeModal()">Back to BuildStack.AI</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════════════════ -->
+<nav>
+  <div class="logo"><div class="logo-dot"></div>BuildStack<span style="color:var(--acid)">.AI</span></div>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#metrics">Work</a></li>
+    <li><a href="#enquiry">Contact</a></li>
+  </ul>
+  <button class="nav-cta" onclick="openModal()">Start a Project →</button>
+</nav>
+
+<!-- ═══ HERO ═══════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">Software Dev &amp; Automation</div>
+    <h1 class="hero-h1">Build <em>Smarter.</em><br><span class="stroke">Deploy</span><br>Faster.</h1>
+    <p class="hero-sub">We engineer production-grade software and intelligent automation pipelines that scale with your ambitions.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="openModal()">Start a Project</button>
+      <button class="btn-ghost" onclick="document.getElementById('metrics').scrollIntoView({behavior:'smooth'})"><span style="color:var(--acid)">▶</span> See Our Work</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num" data-target="150">0<span>+</span></div><div class="stat-label">Projects Shipped</div></div>
+      <div><div class="stat-num" data-target="98">0<span>%</span></div><div class="stat-label">Client Satisfaction</div></div>
+      <div><div class="stat-num" data-target="3">0<span>×</span></div><div class="stat-label">Avg Speed Gain</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="terminal">
+      <div class="terminal-bar"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div><span class="terminal-title">buildstack.sh — zsh</span></div>
+      <div class="terminal-body">
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> buildstack init my-app</span></div>
+        <div class="t-out">Scaffolding project structure...</div>
+        <div class="t-out">Configuring AI pipeline...</div>
+        <div class="t-success">✓ Stack initialized in 1.2s</div>
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> buildstack deploy --prod</span></div>
+        <div class="t-out">Building containers...</div>
+        <div class="t-out">Running automation checks...</div>
+        <div class="t-success">✓ Live at buildstack.ai/app</div>
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> <span class="t-cursor"></span></span></div>
+      </div>
+    </div>
+    <div class="badge badge-1"><div class="badge-label">Uptime</div><div class="badge-value">99.9%</div></div>
+    <div class="badge badge-2"><div class="badge-label">Automation Rate</div><div class="badge-value">84%</div></div>
+    <div class="badge badge-3"><div class="badge-label">Latest Deploy</div><div class="badge-value">2s ago ✓</div></div>
+  </div>
+</section>
+
+<!-- ═══ MARQUEE ════════════════════════════════════════════════════════════ -->
+<div class="marquee-wrap">
+  <div class="marquee">
+    <span class="marquee-item">Software Development</span><span class="marquee-item">AI Automation</span><span class="marquee-item">Cloud Architecture</span><span class="marquee-item">API Integration</span><span class="marquee-item">DevOps Pipelines</span><span class="marquee-item">Machine Learning</span><span class="marquee-item">Process Automation</span><span class="marquee-item">Web Applications</span>
+    <span class="marquee-item">Software Development</span><span class="marquee-item">AI Automation</span><span class="marquee-item">Cloud Architecture</span><span class="marquee-item">API Integration</span><span class="marquee-item">DevOps Pipelines</span><span class="marquee-item">Machine Learning</span><span class="marquee-item">Process Automation</span><span class="marquee-item">Web Applications</span>
+  </div>
+</div>
+
+<!-- ═══ SERVICES ══════════════════════════════════════════════════════════ -->
+<section class="section" id="services">
+  <div class="section-label reveal">What We Build</div>
+  <h2 class="section-title reveal reveal-delay-1">Our <em>Core</em><br>Services</h2>
+  <div class="services-grid reveal reveal-delay-2">
+    <div class="service-card"><div class="service-num">01</div><div class="service-icon"><div class="service-icon-inner">⚙️</div></div><div class="service-name">Custom Software Dev</div><p class="service-desc">End-to-end engineering of scalable web, mobile, and backend systems tailored to your exact business logic.</p><div class="service-arrow">↗</div></div>
+    <div class="service-card"><div class="service-num">02</div><div class="service-icon"><div class="service-icon-inner">🤖</div></div><div class="service-name">AI &amp; Automation</div><p class="service-desc">Intelligent workflows, LLM integration, and RPA pipelines that eliminate repetitive tasks and unlock capacity.</p><div class="service-arrow">↗</div></div>
+    <div class="service-card"><div class="service-num">03</div><div class="service-icon"><div class="service-icon-inner">☁️</div></div><div class="service-name">Cloud &amp; DevOps</div><p class="service-desc">Resilient cloud infrastructure, CI/CD pipelines, and containerized deployments built to handle any scale.</p><div class="service-arrow">↗</div></div>
+  </div>
+</section>
+
+<!-- ═══ PROCESS ════════════════════════════════════════════════════════════ -->
+<section class="process" id="process">
+  <div class="section-label reveal">How It Works</div>
+  <h2 class="section-title reveal reveal-delay-1">From <em>Idea</em><br>to Production</h2>
+  <div class="process-steps">
+    <div class="step reveal reveal-delay-1"><div class="step-circle">01</div><div class="step-name">Discovery</div><p class="step-desc">Deep-dive into your goals, constraints, and technical landscape to define the right solution.</p></div>
+    <div class="step reveal reveal-delay-2"><div class="step-circle">02</div><div class="step-name">Architecture</div><p class="step-desc">System design, tech stack selection, and automation opportunity mapping before a single line is written.</p></div>
+    <div class="step reveal reveal-delay-3"><div class="step-circle">03</div><div class="step-name">Build &amp; Iterate</div><p class="step-desc">Agile sprints with continuous delivery. You see progress every week, not every quarter.</p></div>
+    <div class="step reveal reveal-delay-4"><div class="step-circle">04</div><div class="step-name">Deploy &amp; Scale</div><p class="step-desc">Production launch with monitoring, on-call support, and a roadmap for what comes next.</p></div>
+  </div>
+</section>
+
+<!-- ═══ BENTO ══════════════════════════════════════════════════════════════ -->
+<section class="bento" id="metrics">
+  <div class="section-label reveal">By The Numbers</div>
+  <h2 class="section-title reveal reveal-delay-1"><em>Impact</em> at Scale</h2>
+  <div class="bento-grid reveal reveal-delay-2">
+    <div class="bento-cell bento-cell-1"><div class="bento-orb"></div><div class="bento-tag">Automation Impact</div><div class="bento-h">Save <em>1000s</em> of hours per month</div><p class="bento-p">Our automation clients reclaim an average of 1,200 manual hours monthly through intelligent workflows.</p></div>
+    <div class="bento-cell bento-cell-2"><div class="bento-tag">Avg Delivery</div><div class="bento-metric">6<span>wk</span></div><div class="bento-sub">MVP to Production</div><div class="bar-chart"><div class="bar" style="height:40%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:50%"></div><div class="bar hi" style="height:100%"></div><div class="bar" style="height:75%"></div><div class="bar" style="height:85%"></div></div></div>
+    <div class="bento-cell bento-cell-3"><div class="bento-tag">Client Retention</div><div class="bento-metric" style="font-size:4.2rem">94<span>%</span></div><div class="bento-sub">Return for Phase 2</div><p class="bento-p" style="margin-top:14px">Our work doesn't just ship — it sticks. Clients come back because we build things that last.</p></div>
+    <div class="bento-cell bento-cell-4"><div class="bento-tag">Stack Expertise</div><div class="bento-h" style="font-size:1.35rem">Full-spectrum<br><em>engineering</em></div></div>
+    <div class="bento-cell bento-cell-5"><div class="bento-tag">Response Time</div><div class="bento-metric" style="font-size:2.8rem">&lt;4<span>h</span></div><div class="bento-sub">Avg SLA</div></div>
+    <div class="bento-cell bento-cell-6"><div class="bento-tag">AI-Augmented Team</div><div class="bento-h" style="font-size:1.35rem">Human craft,<br><em>AI velocity</em></div><p class="bento-p" style="margin-top:8px">Senior engineers amplified by our internal AI toolchain — no shortcuts on quality.</p></div>
+  </div>
+</section>
+
+<!-- ═══ ENQUIRY SECTION ════════════════════════════════════════════════════ -->
+<section class="enquiry-section" id="enquiry">
+  <div class="enquiry-inner">
+    <div class="enquiry-left reveal">
+      <div class="section-label">Get In Touch</div>
+      <h2 class="section-title">Start Your<br><em>Project</em> Today</h2>
+      <p class="enquiry-desc">Fill out the form and a senior engineer will review your requirements and respond within 4 hours with a tailored approach.</p>
+      <div class="enquiry-perks">
+        <div class="perk"><div class="perk-dot"></div><div class="perk-text">Free 30-minute strategy consultation</div></div>
+        <div class="perk"><div class="perk-dot"></div><div class="perk-text">No commitment — just a conversation</div></div>
+        <div class="perk"><div class="perk-dot"></div><div class="perk-text">Detailed project estimate within 24h</div></div>
+        <div class="perk"><div class="perk-dot"></div><div class="perk-text">NDA available upon request</div></div>
+      </div>
+    </div>
+    <div class="enquiry-form-wrap reveal reveal-delay-2">
+      <div id="sectionFormWrap">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name *</label><input type="text" class="form-input" id="sf-fname" placeholder="Alex"></div>
+          <div class="form-group"><label class="form-label">Last Name *</label><input type="text" class="form-input" id="sf-lname" placeholder="Johnson"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email Address *</label><input type="email" class="form-input" id="sf-email" placeholder="alex@company.com"></div>
+        <div class="form-group"><label class="form-label">Phone / WhatsApp</label><input type="tel" class="form-input" id="sf-phone" placeholder="+1 555 000 0000"></div>
+        <div class="form-group"><label class="form-label">Service Required *</label>
+          <select class="form-select form-input" id="sf-service">
+            <option value="" disabled selected>Select a service...</option>
+            <option>Custom Software Development</option>
+            <option>AI &amp; Automation</option>
+            <option>Cloud Architecture &amp; DevOps</option>
+            <option>API Integration</option>
+            <option>Web / Mobile Application</option>
+            <option>Full-Stack Product Build</option>
+            <option>Not sure — let's discuss</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated Budget</label>
+          <div class="budget-grid">
+            <div class="budget-option"><input type="radio" name="sbudget" value="lt5k"><label class="budget-label">&lt; $5K</label></div>
+            <div class="budget-option"><input type="radio" name="sbudget" value="5-20k"><label class="budget-label">$5K–$20K</label></div>
+            <div class="budget-option"><input type="radio" name="sbudget" value="20-50k"><label class="budget-label">$20K–$50K</label></div>
+            <div class="budget-option"><input type="radio" name="sbudget" value="50-100k"><label class="budget-label">$50K–$100K</label></div>
+            <div class="budget-option"><input type="radio" name="sbudget" value="gt100k"><label class="budget-label">$100K+</label></div>
+            <div class="budget-option"><input type="radio" name="sbudget" value="flex"><label class="budget-label">Flexible</label></div>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Project Details *</label><textarea class="form-textarea" id="sf-msg" placeholder="Tell us about your project, goals, and timeline..."></textarea></div>
+        <button class="form-submit" onclick="submitSection()">Send Enquiry →</button>
+        <p class="form-error-msg" id="sectionErrMsg"></p>
+        <p class="form-footer-note">We respond within 4 hours · No spam, ever.</p>
+      </div>
+      <div class="form-success" id="sectionSuccess">
+        <div class="form-success-icon">✦</div>
+        <div class="form-success-title">Message <em>Sent!</em></div>
+        <p class="form-success-msg">We'll be in touch within 4 hours.<br>Check your inbox at the email you provided.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA ════════════════════════════════════════════════════════════════ -->
+<section class="cta-section">
+  <div class="cta-label reveal">Ready to Build?</div>
+  <h2 class="cta-title reveal reveal-delay-1">Your <em>Vision.</em><br>Our <span class="stroke">Stack.</span></h2>
+  <p class="cta-sub reveal reveal-delay-2">Tell us what you're building. We'll architect the fastest path to production.</p>
+  <div class="cta-actions reveal reveal-delay-3">
+    <button class="btn-primary" onclick="openModal()">Book a Free Consult</button>
+    <button class="btn-ghost" onclick="document.getElementById('enquiry').scrollIntoView({behavior:'smooth'})">Send an Enquiry ↗</button>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-logo">BuildStack<span style="color:var(--acid)">.AI</span></div>
+  <ul class="footer-links"><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#">Careers</a></li><li><a href="#enquiry">Contact</a></li></ul>
+  <div class="footer-copy">© 2025 BuildStack.AI — All rights reserved.</div>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   THREE.JS 3D BACKGROUND
+══════════════════════════════════════════════════════════════ */
+(function initThree() {
+  try {
+    if (typeof THREE === 'undefined') return;
+    const canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 0, 30);
+
+  // — PARTICLE FIELD —
+  const COUNT = 3000;
+  const pos = new Float32Array(COUNT * 3);
+  const col = new Float32Array(COUNT * 3);
+  const sz  = new Float32Array(COUNT);
+  const vel = [];
+  const cA  = new THREE.Color(0xc8ff00);
+  const cB  = new THREE.Color(0x00f5ff);
+  const cW  = new THREE.Color(0xffffff);
+
+  for (let i = 0; i < COUNT; i++) {
+    const r = 40 + Math.random() * 35;
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+    pos[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+    pos[i*3+2] = r * Math.cos(ph) * 0.4;
+    const t = Math.random();
+    const c = t < 0.5 ? cA.clone().lerp(cW, t * 2) : cB.clone().lerp(cW, (t - 0.5) * 2);
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+    sz[i] = Math.random() * 1.6 + 0.3;
+    vel.push({ x:(Math.random()-.5)*.007, y:(Math.random()-.5)*.007, z:(Math.random()-.5)*.003 });
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size',     new THREE.BufferAttribute(sz, 1));
+
+  const mat = new THREE.PointsMaterial({ size:.18, vertexColors:true, transparent:true, opacity:.65, sizeAttenuation:true, depthWrite:false });
+  const particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+
+  // — WIREFRAME TORUS KNOT —
+  const tkMesh = new THREE.Mesh(
+    new THREE.TorusKnotGeometry(10, 2.4, 120, 18, 2, 3),
+    new THREE.MeshBasicMaterial({ color:0xc8ff00, wireframe:true, transparent:true, opacity:.04 })
+  );
+  tkMesh.position.set(14, 1, -6);
+  scene.add(tkMesh);
+
+  // — ICOSAHEDRON —
+  const icoMesh = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(6.5, 1),
+    new THREE.MeshBasicMaterial({ color:0x00f5ff, wireframe:true, transparent:true, opacity:.05 })
+  );
+  icoMesh.position.set(-18, -4, -8);
+  scene.add(icoMesh);
+
+  // — OCTAHEDRON —
+  const octMesh = new THREE.Mesh(
+    new THREE.OctahedronGeometry(4.5, 0),
+    new THREE.MeshBasicMaterial({ color:0xc8ff00, wireframe:true, transparent:true, opacity:.065 })
+  );
+  octMesh.position.set(-6, 12, -14);
+  scene.add(octMesh);
+
+  // — SPARSE CONNECTING LINES —
+  const lp = [];
+  for (let i = 0; i < 100; i++) {
+    const ai = Math.floor(Math.random() * COUNT) * 3;
+    const bi = Math.floor(Math.random() * COUNT) * 3;
+    const d = Math.hypot(pos[ai]-pos[bi], pos[ai+1]-pos[bi+1], pos[ai+2]-pos[bi+2]);
+    if (d < 18) lp.push(pos[ai],pos[ai+1],pos[ai+2], pos[bi],pos[bi+1],pos[bi+2]);
+  }
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(lp, 3));
+  scene.add(new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ color:0xc8ff00, transparent:true, opacity:.035 })));
+
+  // — MOUSE PARALLAX —
+  let pmx = 0, pmy = 0;
+  document.addEventListener('mousemove', e => { pmx = (e.clientX/window.innerWidth-.5)*2; pmy = (e.clientY/window.innerHeight-.5)*2; });
+
+  let scrollY = 0;
+  window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+  let tick = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    tick += 0.003;
+
+    tkMesh.rotation.x += .0022; tkMesh.rotation.y += .0038;
+    icoMesh.rotation.x -= .0028; icoMesh.rotation.z += .003;
+    octMesh.rotation.y += .0045; octMesh.rotation.x += .003;
+
+    const p = geo.attributes.position.array;
+    for (let i = 0; i < COUNT; i++) {
+      p[i*3]   += vel[i].x;
+      p[i*3+1] += vel[i].y;
+      p[i*3+2] += vel[i].z;
+      if (Math.abs(p[i*3])   > 75) vel[i].x *= -1;
+      if (Math.abs(p[i*3+1]) > 75) vel[i].y *= -1;
+      if (Math.abs(p[i*3+2]) > 22) vel[i].z *= -1;
+    }
+    geo.attributes.position.needsUpdate = true;
+
+    camera.position.x += (pmx * 4 - camera.position.x) * .028;
+    camera.position.y += (-pmy * 3 - camera.position.y) * .028;
+    camera.lookAt(scene.position);
+    particles.rotation.y = tick * .055;
+
+    // fade canvas as user scrolls past hero
+    const fade = Math.max(0, 1 - Math.max(0, scrollY - 350) / 550);
+    canvas.style.opacity = fade;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  } catch (e) {
+    console.warn('3D background unavailable:', e);
+  }
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   CURSOR
+══════════════════════════════════════════════════════════════ */
+const $cur  = document.getElementById('cursor');
+const $ring = document.getElementById('cursor-ring');
+let cx=0,cy=0,rx=0,ry=0;
+document.addEventListener('mousemove', e => { cx=e.clientX; cy=e.clientY; });
+(function loop(){ $cur.style.cssText+=`left:${cx}px;top:${cy}px`; rx+=(cx-rx)*.11; ry+=(cy-ry)*.11; $ring.style.cssText+=`left:${rx}px;top:${ry}px`; requestAnimationFrame(loop); })();
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLL REVEAL
+══════════════════════════════════════════════════════════════ */
+const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('visible')), {threshold:.1});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMATED COUNTERS
+══════════════════════════════════════════════════════════════ */
+function countUp(el, target, dur=1600) {
+  const suf = el.querySelector('span')?.outerHTML || '';
+  const t0 = performance.now();
+  (function step(now) {
+    const p = Math.min((now-t0)/dur, 1);
+    const e = 1 - Math.pow(1-p, 3);
+    el.innerHTML = Math.round(target*e) + suf;
+    if (p < 1) requestAnimationFrame(step);
+  })(performance.now());
+}
+const statEls = document.querySelectorAll('.stat-num[data-target]');
+const sio = new IntersectionObserver(es => { es.forEach(e => { if(e.isIntersecting){ statEls.forEach(el => countUp(el, +el.dataset.target)); sio.disconnect(); } }); }, {threshold:.5});
+if (statEls.length) sio.observe(statEls[0]);
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════════════════════ */
+function openModal()  { document.getElementById('enquiryModal').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal() { document.getElementById('enquiryModal').classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('enquiryModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+/* ══════════════════════════════════════════════════════════════
+   EMAILJS CONFIG  ← PASTE YOUR KEYS HERE
+══════════════════════════════════════════════════════════════ */
+const EMAILJS_PUBLIC_KEY  = 'vjx_JGm5xgmpNlRfu';
+const EMAILJS_SERVICE_ID  = 'service_sf0w7na';
+const EMAILJS_TEMPLATE_ID = 'template_t7ju9hg';
+
+if (typeof emailjs !== 'undefined') {
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════ */
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toast-msg');
+  m.textContent = msg;
+  t.classList.toggle('error-toast', isError);
+  t.querySelector('.toast-icon').textContent = isError ? '✗' : '✦';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 5000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FORM VALIDATION + SHAKE
+══════════════════════════════════════════════════════════════ */
+function validate(fields) {
+  let first = null;
+  for (const f of fields) {
+    if (!f.value.trim()) {
+      shake(f);
+      if (!first) first = f;
+    }
+  }
+  if (first) { first.focus(); return false; }
+  return true;
+}
+function shake(el) {
+  el.style.borderColor = 'rgba(255,69,0,.7)';
+  el.animate([
+    {transform:'translateX(-5px)'},{transform:'translateX(5px)'},
+    {transform:'translateX(-3px)'},{transform:'translateX(3px)'},
+    {transform:'translateX(0)'}
+  ], {duration:380});
+  setTimeout(() => el.style.borderColor = '', 800);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SET BUTTON LOADING STATE
+══════════════════════════════════════════════════════════════ */
+function setLoading(btn, loading) {
+  if (loading) {
+    btn.dataset.origText = btn.textContent;
+    btn.classList.add('sending');
+    btn.innerHTML = '<div class="spinner"></div><span>Sending...</span>';
+  } else {
+    btn.classList.remove('sending');
+    btn.innerHTML = btn.dataset.origText || 'Send Enquiry →';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COLLECT FORM DATA
+══════════════════════════════════════════════════════════════ */
+function getModalData() {
+  const budget = document.querySelector('input[name="mbudget"]:checked');
+  const source = document.getElementById('mf-source');
+  return {
+    from_name : `${document.getElementById('mf-fname').value.trim()} ${document.getElementById('mf-lname').value.trim()}`,
+    from_email: document.getElementById('mf-email').value.trim(),
+    phone     : document.getElementById('mf-phone').value.trim() || 'Not provided',
+    company   : document.getElementById('mf-company').value.trim() || 'Not provided',
+    service   : document.getElementById('mf-service').value,
+    budget    : budget ? budget.value : 'Not selected',
+    source    : source.value || 'Not specified',
+    message   : document.getElementById('mf-msg').value.trim(),
+    to_email  : 'yadavr74839@gmail.com',
+    reply_to  : document.getElementById('mf-email').value.trim(),
+  };
+}
+
+function getSectionData() {
+  const budget = document.querySelector('input[name="sbudget"]:checked');
+  return {
+    from_name : `${document.getElementById('sf-fname').value.trim()} ${document.getElementById('sf-lname').value.trim()}`,
+    from_email: document.getElementById('sf-email').value.trim(),
+    phone     : document.getElementById('sf-phone').value.trim() || 'Not provided',
+    company   : 'Not provided',
+    service   : document.getElementById('sf-service').value,
+    budget    : budget ? budget.value : 'Not selected',
+    source    : 'Not specified',
+    message   : document.getElementById('sf-msg').value.trim(),
+    to_email  : 'yadavr74839@gmail.com',
+    reply_to  : document.getElementById('sf-email').value.trim(),
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SUBMIT — MODAL FORM
+══════════════════════════════════════════════════════════════ */
+async function submitModal() {
+  const valid = validate([
+    document.getElementById('mf-fname'),
+    document.getElementById('mf-email'),
+    document.getElementById('mf-service'),
+    document.getElementById('mf-msg')
+  ]);
+  if (!valid) return;
+
+  const btn = document.querySelector('#modalFormWrap .form-submit');
+  const errEl = document.querySelector('#modalFormWrap .form-error-msg') || createErrEl('#modalFormWrap .form-footer-note');
+  setLoading(btn, true);
+  errEl.classList.remove('show');
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, getModalData());
+    document.getElementById('modalFormWrap').style.display = 'none';
+    document.getElementById('modalSuccess').classList.add('show');
+    showToast('Enquiry sent! We\'ll reply within 4 hours.');
+  } catch (err) {
+    setLoading(btn, false);
+    errEl.textContent = '⚠ Failed to send. Please try again or email us directly.';
+    errEl.classList.add('show');
+    showToast('Send failed. Check your connection and try again.', true);
+    console.error('EmailJS error:', err);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SUBMIT — SECTION FORM
+══════════════════════════════════════════════════════════════ */
+async function submitSection() {
+  const valid = validate([
+    document.getElementById('sf-fname'),
+    document.getElementById('sf-email'),
+    document.getElementById('sf-service'),
+    document.getElementById('sf-msg')
+  ]);
+  if (!valid) return;
+
+  const btn = document.querySelector('#sectionFormWrap .form-submit');
+  const errEl = document.querySelector('#sectionFormWrap .form-error-msg') || createErrEl('#sectionFormWrap .form-footer-note');
+  setLoading(btn, true);
+  errEl.classList.remove('show');
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, getSectionData());
+    document.getElementById('sectionFormWrap').style.display = 'none';
+    document.getElementById('sectionSuccess').classList.add('show');
+    showToast('Message sent! We\'ll be in touch within 4 hours.');
+  } catch (err) {
+    setLoading(btn, false);
+    errEl.textContent = '⚠ Failed to send. Please try again or email us directly.';
+    errEl.classList.add('show');
+    showToast('Send failed. Check your connection and try again.', true);
+    console.error('EmailJS error:', err);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUDGET OPTION CLICK HANDLER
+══════════════════════════════════════════════════════════════ */
+document.querySelectorAll('.budget-option').forEach(option => {
+  option.addEventListener('click', function() {
+    // Deselect all in same group
+    const radio = this.querySelector('input[type=radio]');
+    const groupName = radio.name;
+    document.querySelectorAll(`input[name="${groupName}"]`).forEach(r => {
+      r.closest('.budget-option').classList.remove('selected');
+      r.checked = false;
+    });
+    // Select this one
+    radio.checked = true;
+    this.classList.add('selected');
+  });
+});
+function createErrEl(beforeSelector) {
+  const el = document.createElement('p');
+  el.className = 'form-error-msg';
+  const ref = document.querySelector(beforeSelector);
+  if (ref) ref.parentNode.insertBefore(el, ref);
+  return el;
+}
+</script>
+</body>
+</html>
